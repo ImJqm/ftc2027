@@ -17,6 +17,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import static com.pedropathing.ivy.pedro.PedroCommands.follow;
 
 import org.firstinspires.ftc.teamcode.pedro.Constants;
+import org.firstinspires.ftc.teamcode.pedro.DataStorage;
 
 @Autonomous(name = "redBasic")
 public class redBasic extends OpMode {
@@ -55,6 +56,11 @@ public class redBasic extends OpMode {
     public void loop() {
         follower.update();
         Scheduler.execute();
+    }
+
+    @Override
+    public void stop() {
+        DataStorage.autonomousEndPose = follower.pose();
     }
 
     public void initPaths() {
