@@ -5,10 +5,13 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.ManualDrive.*;
 import com.pedropathing.follower.ManualDrive;
 import com.pedropathing.math.Pose;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.pedro.CoolMath;
 import org.firstinspires.ftc.teamcode.pedro.DataStorage;
@@ -17,10 +20,19 @@ import org.firstinspires.ftc.teamcode.pedro.DataStorage;
 public class pedroTeleOp extends OpMode {
     private Follower follower;
 
+    private IMU imu;
+
+    private double angleOffset = 0.0;
+
     @Override
     public void init() {
         follower = Constants.create(hardwareMap);
         follower.update();
+
+        imu = hardwareMap.get(IMU.class, "imu");
+
+        IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.UP, RevHubOrientationOnRobot.UsbFacingDirection.RIGHT ));
+        imu.initialize(parameters);
     }
 
     @Override
@@ -30,19 +42,22 @@ public class pedroTeleOp extends OpMode {
 
     @Override
     public void loop() {
+
+        double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+
         DrivePowers powers = ManualDrive.fieldCentric(
                 -gamepad2.left_stick_y,
-                gamepad2.left_stick_x,
-                gamepad2.right_stick_x,
-                follower.pose().heading()
+                -gamepad2.left_stick_x,
+                -gamepad2.right_stick_x,
+                follower.pose().heading(),
+                -angleOffset
         );
 
         ManualDrive.driveOrHold(follower, powers);
 
         //this SHOULD theoretically reset the mechanum drice train but I can't test it rn so ig well never know
         if (gamepad2.startWasPressed()) {
-            Pose repose = new Pose(follower.pose().x(), follower.pose().y(), 0);
-            follower.setPose(repose);
+            angleOffset = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
         }
 
         follower.update();

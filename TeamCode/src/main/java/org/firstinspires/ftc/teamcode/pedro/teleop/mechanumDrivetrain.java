@@ -28,10 +28,11 @@ public class mechanumDrivetrain extends OpMode {
         motorFrL = hardwareMap.get(DcMotor.class,"lf");
         motorFrR = hardwareMap.get(DcMotor.class,"rf");
         motorBL = hardwareMap.get(DcMotor.class,"lr");
-        motorBR = hardwareMap.get(DcMotor.class,"rr ");
+        motorBR = hardwareMap.get(DcMotor.class,"rr");
         //These are backwards for a mechanum drivetrain
         motorBL.setDirection(DcMotorSimple.Direction.REVERSE);
         motorFrL.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorFrR.setDirection(DcMotorSimple.Direction.REVERSE);
 
         //Resist pushing
         motorBL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);

@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.pedro.Flywheel;
 
 @TeleOp(name="turretTest")
 public class turretTest extends OpMode {
@@ -18,14 +19,19 @@ public class turretTest extends OpMode {
     DcMotor motorBL;
     DcMotor motorBR;
 
-    DcMotor turretMotor;
+    //DcMotor turretMotor;
 
     boolean turretOn = false;
 
     double turretPower = 0.2;
 
+
+
     //Declare IMU
     IMU imu;
+
+    Flywheel flywheel = new Flywheel();
+
 
     @Override
     public void init() {
@@ -44,13 +50,15 @@ public class turretTest extends OpMode {
         motorBR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         motorFrR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        turretMotor = hardwareMap.get(DcMotor.class, "turretMotor");
+        //turretMotor = hardwareMap.get(DcMotor.class, "turretMotor");
 
         //init IMU
         imu = hardwareMap.get(IMU.class, "imu");
 
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.UP, RevHubOrientationOnRobot.UsbFacingDirection.RIGHT ));
         imu.initialize(parameters);
+
+        flywheel.init(hardwareMap);
 
     }
 
@@ -84,6 +92,25 @@ public class turretTest extends OpMode {
             }
         }
 
+        if (gamepad2.dpadLeftWasPressed()) {
+            flywheel.setPIDFIncrement(flywheel.increment-0.01);
+        }
+
+        if (gamepad2.dpadRightWasPressed()) {
+            flywheel.setPIDFIncrement(flywheel.increment+0.01);
+        }
+
+        if (gamepad2.dpadUpWasPressed()) {
+            flywheel.changeCurrent(1.0);
+        }
+        if (gamepad2.dpadDownWasPressed()) {
+            flywheel.changeCurrent(-1.0);
+        }
+
+        if (gamepad2.bWasPressed()) {
+            flywheel.nextState();
+        }
+
         //Get Bot Angle
         double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
 
@@ -103,8 +130,15 @@ public class turretTest extends OpMode {
         motorBL.setPower(backLeftPower);
         motorBR.setPower(backRightPower);
 
-        turretMotor.setPower(turretOn ? turretPower: 0.0);
+        flywheel.update(turretOn ? 1.0*turretPower*flywheel.maxOmega : 0.0);
 
+        telemetry.addData("Currently Changing", flywheel.pidf);
+        telemetry.addData("P", flywheel.P);
+        telemetry.addData("I", flywheel.I);
+        telemetry.addData("D", flywheel.D);
+        telemetry.addData("F", flywheel.F);
+        telemetry.addData("Increment Value", flywheel.increment);
         telemetry.addData("turretPower:", turretPower);
+        telemetry.addData("Target Speed (Ticks Per Second)", turretOn ? 1.0*turretPower*flywheel.maxOmega : 0.0);
     }
 }
