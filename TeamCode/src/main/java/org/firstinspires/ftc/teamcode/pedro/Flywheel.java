@@ -72,6 +72,10 @@ public class Flywheel {
         motor1.setVelocityPIDFCoefficients(P, I, D, F);
     }
 
+    public double getVelocity() {
+        return motor0.getVelocity();
+    }
+
     public void setPIDFIncrement(double inc) {
         increment = inc;
     }

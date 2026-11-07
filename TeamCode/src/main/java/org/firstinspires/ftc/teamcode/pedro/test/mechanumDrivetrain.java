@@ -1,6 +1,5 @@
-package org.firstinspires.ftc.teamcode.pedro.teleop;
+package org.firstinspires.ftc.teamcode.pedro.test;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;

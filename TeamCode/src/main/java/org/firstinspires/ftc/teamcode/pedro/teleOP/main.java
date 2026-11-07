@@ -1,28 +1,42 @@
-package org.firstinspires.ftc.teamcode.pedro.teleop;
+package org.firstinspires.ftc.teamcode.pedro.teleOP;
 
 import com.pedropathing.drivetrain.DrivePowers;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.follower.ManualDrive.*;
 import com.pedropathing.follower.ManualDrive;
 import com.pedropathing.math.Pose;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
 import org.firstinspires.ftc.teamcode.pedro.CoolMath;
 import org.firstinspires.ftc.teamcode.pedro.DataStorage;
+import org.firstinspires.ftc.teamcode.pedro.Flywheel;
 
-@TeleOp(name = "pedroTeleOP")
-public class pedroTeleOp extends OpMode {
+@TeleOp(name = "main")
+public class main extends OpMode {
     private Follower follower;
 
     private IMU imu;
 
     private double angleOffset = 0.0;
+
+    private DcMotor transfer;
+
+    private DcMotor intake;
+
+    private Servo servoBlocker;
+
+    private Servo turretServo;
+
+    private double servoBlockerStart = 0.0;
+    private double servoBlockerStop = 0.5;
+
+    Flywheel flywheel = new Flywheel();
 
     @Override
     public void init() {
@@ -33,6 +47,8 @@ public class pedroTeleOp extends OpMode {
 
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.UP, RevHubOrientationOnRobot.UsbFacingDirection.RIGHT ));
         imu.initialize(parameters);
+
+        flywheel.init(hardwareMap);
     }
 
     @Override
@@ -57,7 +73,7 @@ public class pedroTeleOp extends OpMode {
 
         //this SHOULD theoretically reset the mechanum drice train but I can't test it rn so ig well never know
         if (gamepad2.startWasPressed()) {
-            angleOffset = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+            angleOffset = follower.pose().heading();
         }
 
         follower.update();
@@ -73,7 +89,7 @@ public class pedroTeleOp extends OpMode {
         //This should theretically always point a servo towards the middle of the feild to its best ability
         //This kinda assumes that Servo.setPosition(0.0) is the center of the feild
         //I need to doulbe check field geonetry this is most likely totally wrong
-        telemetry.addData("Experimental Angle From Center of Feild", CoolMath.coolArctan(72, 72, pose.x(), pose.y()));
+        //telemetry.addData("Experimental Angle From Center of Feild", CoolMath.coolArctan(72, 72, pose.x(), pose.y()));
 
     }
 }
