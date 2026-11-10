@@ -33,11 +33,14 @@ public class mainTest extends OpMode {
     double transferPower = 0.2;
 
     Servo stopperServo;
+    Servo turretServo;
     //Declare IMU
     IMU imu;
 
     @Override
     public void init() {
+
+
         //Instatiate motors
         motorFrL = hardwareMap.get(DcMotor.class,"lf");
         motorFrR = hardwareMap.get(DcMotor.class,"rf");
@@ -66,14 +69,19 @@ public class mainTest extends OpMode {
         imu = hardwareMap.get(IMU.class, "imu");
 
         stopperServo = hardwareMap.get(Servo.class, "stopper");
+        turretServo = hardwareMap.get(Servo.class, "turretServo");
 
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.UP, RevHubOrientationOnRobot.UsbFacingDirection.RIGHT ));
         imu.initialize(parameters);
+
+        turretServo.setPosition(0.15);
 
     }
 
     @Override
     public void loop() {
+
+        turretServo.setPosition(0.15);
 
         //Get Controller Input
         double y = -gamepad2.left_stick_y;
