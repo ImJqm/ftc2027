@@ -1,59 +1,60 @@
 package org.firstinspires.ftc.teamcode.pedro;
 
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 
+@Configurable
 public class Flywheel {
 
-    public enum PIDFINCREMENT {
-        P {
-            @Override
-            public PIDFINCREMENT nextState() {
-                return I;
-            }
-        },
-        I {
-            @Override
-            public PIDFINCREMENT nextState() {
-                return D;
-            }
-        },
-        D {
-            @Override
-            public PIDFINCREMENT nextState() {
-                return F;
-            }
-        },
-
-        F {
-            @Override
-            public PIDFINCREMENT nextState() {return P;}
-        };
-
-        public abstract PIDFINCREMENT nextState() ;
+    public enum State {
+        SPINUP,
+        READY,
+        RECOVERING
     }
-    public PIDFINCREMENT pidf;
-    public Double increment = 0.1;
-    public Double P = 1.0;
-    public Double I = 0.0;
-    public Double D = 1.0;
-    public Double F = 1.0;
-    private final Double TICKS_PER_REV = 28.0;
 
-    public final Double maxOmega = 6000 / 60.0 * TICKS_PER_REV;
+    public static double P = 1.355;
+    public static double I = 0.0;
+    public static double D = 0.02;
+    public static double F = 8.5;
+
+    public static double dipThreshold = 60.0;
+    public static double recoverTolerance = 20.0;
+    public static double spinupTolerance = 40.0;
+    public static double boostGain = 1.0;
+    public static double boostMax = 600.0;
+    public static double learnRate = 0.3;
+
+    private static final double TICKS_PER_REV = 28.0;
+
+    public final double maxOmega = 6000 / 60.0 * TICKS_PER_REV;
 
     public DcMotorEx motor0;
 
     public DcMotorEx motor1;
 
+    private double appliedP = Double.NaN;
+    private double appliedI = Double.NaN;
+    private double appliedD = Double.NaN;
+    private double appliedF = Double.NaN;
+
+    private State state = State.SPINUP;
+    private double target = 0.0;
+    private double command = 0.0;
+    private double boost = 0.0;
+    private double velocity0 = 0.0;
+    private double velocity1 = 0.0;
+    private double currentDip = 0.0;
+    private double lastDip = 0.0;
+    private double averageDip = 0.0;
+    private int shotCount = 0;
+
     public void init(HardwareMap hardwareMap) {
-
-        pidf = PIDFINCREMENT.P;
-
         motor0 = hardwareMap.get(DcMotorEx.class, "flywheel0");
         motor1 = hardwareMap.get(DcMotorEx.class, "flywheel1");
         motor0.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -63,55 +64,132 @@ public class Flywheel {
 
         motor0.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         motor1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        applyPIDF();
     }
 
-    public void update(Double targetTPS) {
-        motor0.setVelocity(targetTPS);
-        motor1.setVelocity(targetTPS);
+    public void update(double targetTPS) {
+        if (P != appliedP || I != appliedI || D != appliedD || F != appliedF) {
+            applyPIDF();
+        }
+
+        velocity0 = motor0.getVelocity();
+        velocity1 = motor1.getVelocity();
+
+        if (targetTPS != target) {
+            target = targetTPS;
+            state = State.SPINUP;
+            currentDip = 0.0;
+        }
+
+        double error = target - getVelocity();
+
+        if (target <= 0.0) {
+            state = State.SPINUP;
+        } else {
+            switch (state) {
+                case SPINUP:
+                    if (Math.abs(error) < spinupTolerance) {
+                        state = State.READY;
+                    }
+                    break;
+                case READY:
+                    if (error > dipThreshold) {
+                        state = State.RECOVERING;
+                        currentDip = error;
+                        shotCount++;
+                    }
+                    break;
+                case RECOVERING:
+                    currentDip = Math.max(currentDip, error);
+                    if (error < recoverTolerance) {
+                        lastDip = currentDip;
+                        averageDip = shotCount == 1 ? currentDip : averageDip + learnRate * (currentDip - averageDip);
+                        currentDip = 0.0;
+                        state = State.READY;
+                    }
+                    break;
+            }
+        }
+
+        boost = state == State.RECOVERING ? Math.min(boostMax, boostGain * Math.max(currentDip, averageDip)) : 0.0;
+        command = target + boost;
+
+        motor0.setVelocity(command);
+        motor1.setVelocity(command);
     }
 
     public void applyPIDF() {
-        motor0.setVelocityPIDFCoefficients(P, I, D, F);
-        motor1.setVelocityPIDFCoefficients(P, I, D, F);
+        PIDFCoefficients coefficients = new PIDFCoefficients(P, I, D, F);
+        motor0.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, coefficients);
+        motor1.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, coefficients);
+        appliedP = P;
+        appliedI = I;
+        appliedD = D;
+        appliedF = F;
     }
 
     public void setPidf(double P, double I, double D, double F) {
-        this.P = P;
-        this.I = I;
-        this.D = D;
-        this.F = F;
+        Flywheel.P = P;
+        Flywheel.I = I;
+        Flywheel.D = D;
+        Flywheel.F = F;
         applyPIDF();
+    }
+
+    public void resetShotTracking() {
+        shotCount = 0;
+        averageDip = 0.0;
+        lastDip = 0.0;
+        currentDip = 0.0;
+    }
+
+    public boolean isReady() {
+        return state == State.READY;
+    }
+
+    public State getState() {
+        return state;
+    }
+
+    public double getTarget() {
+        return target;
+    }
+
+    public double getCommand() {
+        return command;
+    }
+
+    public double getBoost() {
+        return boost;
     }
 
     public double getVelocity() {
-        return motor0.getVelocity() + motor1.getVelocity() / 2;
+        return (velocity0 + velocity1) / 2.0;
     }
 
-    public void setPIDFIncrement(double inc) {
-        increment = inc;
+    public double getVelocity0() {
+        return velocity0;
     }
 
-    public void changeCurrent(double sign) {
-        switch (pidf) {
-            case P:
-                P+=sign*increment;
-                break;
-            case I:
-                I+=sign*increment;
-                break;
-            case D:
-                D+=sign*increment;
-                break;
-            case F:
-                F+=sign*increment;
-                break;
-        }
-
-        applyPIDF();
+    public double getVelocity1() {
+        return velocity1;
     }
 
-    public void nextState() {
-        pidf = pidf.nextState();
+    public double getCurrentDip() {
+        return currentDip;
+    }
+
+    public double getLastDip() {
+        return lastDip;
+    }
+
+    public double getAverageDip() {
+        return averageDip;
+    }
+
+    public int getShotCount() {
+        return shotCount;
     }
 
 }

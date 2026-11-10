@@ -1,9 +1,12 @@
 package org.firstinspires.ftc.teamcode.pedro.test;
 
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.drivetrain.DrivePowers;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.ManualDrive;
 import com.pedropathing.math.Pose;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -32,6 +35,8 @@ public class turretTest extends OpMode {
 
     Flywheel flywheel = new Flywheel();
 
+    TelemetryManager panelsTelemetry;
+
     DcMotor transfer;
     DcMotor intake;
 
@@ -43,6 +48,12 @@ public class turretTest extends OpMode {
 
     @Override
     public void init() {
+        for (LynxModule hub : hardwareMap.getAll(LynxModule.class)) {
+            hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
+        }
+
+        panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
+
         follower = Constants.create(hardwareMap);
         follower.update();
 
@@ -131,23 +142,8 @@ public class turretTest extends OpMode {
             intake.setDirection(DcMotorSimple.Direction.REVERSE);
         }
 
-        if (gamepad2.dpadLeftWasPressed()) {
-            flywheel.setPIDFIncrement(flywheel.increment-0.01);
-        }
-
-        if (gamepad2.dpadRightWasPressed()) {
-            flywheel.setPIDFIncrement(flywheel.increment+0.01);
-        }
-
-        if (gamepad2.dpadUpWasPressed()) {
-            flywheel.changeCurrent(1.0);
-        }
-        if (gamepad2.dpadDownWasPressed()) {
-            flywheel.changeCurrent(-1.0);
-        }
-
         if (gamepad2.bWasPressed()) {
-            flywheel.nextState();
+            flywheel.resetShotTracking();
         }
 
         if (shooting) {
@@ -162,17 +158,20 @@ public class turretTest extends OpMode {
 
         flywheel.update(turretOn ? 1.0*turretPower*flywheel.maxOmega : 0.0);
 
-        telemetry.addData("turretPower", turretPower);
-        telemetry.addData("Shooting", shooting);
-        telemetry.addData("Currently Changing", flywheel.pidf);
-        telemetry.addData("P", flywheel.P);
-        telemetry.addData("I", flywheel.I);
-        telemetry.addData("D", flywheel.D);
-        telemetry.addData("F", flywheel.F);
-        telemetry.addData("Increment Value", flywheel.increment);
-        telemetry.addData("turretPower:", turretPower);
-        telemetry.addData("Target Speed (Ticks Per Second)", turretOn ? 1.0*turretPower*flywheel.maxOmega : 0.0);
-        telemetry.addData("Current Speed: (Ticks Per Second)", flywheel.getVelocity());
+        panelsTelemetry.addData("Target Speed (Ticks Per Second)", flywheel.getTarget());
+        panelsTelemetry.addData("Command Speed (Ticks Per Second)", flywheel.getCommand());
+        panelsTelemetry.addData("Current Speed (Ticks Per Second)", flywheel.getVelocity());
+        panelsTelemetry.addData("flywheel0 Speed", flywheel.getVelocity0());
+        panelsTelemetry.addData("flywheel1 Speed", flywheel.getVelocity1());
+        panelsTelemetry.addData("Boost", flywheel.getBoost());
+        panelsTelemetry.addData("Current Dip", flywheel.getCurrentDip());
+        panelsTelemetry.addData("Last Dip", flywheel.getLastDip());
+        panelsTelemetry.addData("Average Dip", flywheel.getAverageDip());
+        panelsTelemetry.addData("Shot Count", flywheel.getShotCount());
+        panelsTelemetry.addData("Flywheel State", flywheel.getState());
+        panelsTelemetry.addData("turretPower", turretPower);
+        panelsTelemetry.addData("Shooting", shooting);
+        panelsTelemetry.update(telemetry);
 
     }
 }
