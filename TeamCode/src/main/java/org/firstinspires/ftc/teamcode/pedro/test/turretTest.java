@@ -26,7 +26,7 @@ public class turretTest extends OpMode {
     private double angleOffset = 0.0;
 
     boolean turretOn = false;
-    double turretPower = 0.55;
+    double turretPower = 0.468;
 
     private Servo turretServo;
 

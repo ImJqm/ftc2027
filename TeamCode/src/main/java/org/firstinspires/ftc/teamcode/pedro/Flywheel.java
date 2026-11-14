@@ -18,15 +18,15 @@ public class Flywheel {
         RECOVERING
     }
 
-    public static double P = 1.355;
+    public static double P = 120;
     public static double I = 0.0;
-    public static double D = 0.02;
-    public static double F = 8.5;
+    public static double D = 0.1;
+    public static double F = 13.0;
 
     public static double dipThreshold = 60.0;
     public static double recoverTolerance = 20.0;
     public static double spinupTolerance = 40.0;
-    public static double boostGain = 1.0;
+    public static double boostGain = 10.0;
     public static double boostMax = 600.0;
     public static double learnRate = 0.3;
 
