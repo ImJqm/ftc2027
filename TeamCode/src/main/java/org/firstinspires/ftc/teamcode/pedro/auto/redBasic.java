@@ -86,7 +86,6 @@ public class redBasic extends OpMode {
         shootTimer = new Timer();
 
         flywheel.init(hardwareMap);
-        flywheel.setPidf(1.355, 0.0, 0.02, 8.5);
     }
 
     @Override
