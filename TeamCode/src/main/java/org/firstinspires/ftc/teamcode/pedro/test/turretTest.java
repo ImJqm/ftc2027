@@ -166,7 +166,6 @@ public class turretTest extends OpMode {
         panelsTelemetry.addData("Boost", flywheel.getBoost());
         panelsTelemetry.addData("Current Dip", flywheel.getCurrentDip());
         panelsTelemetry.addData("Last Dip", flywheel.getLastDip());
-        panelsTelemetry.addData("Average Dip", flywheel.getAverageDip());
         panelsTelemetry.addData("Shot Count", flywheel.getShotCount());
         panelsTelemetry.addData("Flywheel State", flywheel.getState());
         panelsTelemetry.addData("turretPower", turretPower);

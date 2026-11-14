@@ -28,7 +28,7 @@ public class Flywheel {
     public static double spinupTolerance = 40.0;
     public static double boostGain = 10.0;
     public static double boostMax = 600.0;
-    public static double learnRate = 0.3;
+    public static double ballDip = 70.0;
 
     private static final double TICKS_PER_REV = 28.0;
 
@@ -51,7 +51,6 @@ public class Flywheel {
     private double velocity1 = 0.0;
     private double currentDip = 0.0;
     private double lastDip = 0.0;
-    private double averageDip = 0.0;
     private int shotCount = 0;
 
     public void init(HardwareMap hardwareMap) {
@@ -104,7 +103,6 @@ public class Flywheel {
                     currentDip = Math.max(currentDip, error);
                     if (error < recoverTolerance) {
                         lastDip = currentDip;
-                        averageDip = shotCount == 1 ? currentDip : averageDip + learnRate * (currentDip - averageDip);
                         currentDip = 0.0;
                         state = State.READY;
                     }
@@ -112,7 +110,7 @@ public class Flywheel {
             }
         }
 
-        boost = state == State.RECOVERING ? Math.min(boostMax, boostGain * Math.max(currentDip, averageDip)) : 0.0;
+        boost = state == State.RECOVERING ? Math.min(boostMax, boostGain * Math.max(currentDip, ballDip)) : 0.0;
         command = target + boost;
 
         motor0.setVelocity(command);
@@ -139,7 +137,6 @@ public class Flywheel {
 
     public void resetShotTracking() {
         shotCount = 0;
-        averageDip = 0.0;
         lastDip = 0.0;
         currentDip = 0.0;
     }
@@ -182,10 +179,6 @@ public class Flywheel {
 
     public double getLastDip() {
         return lastDip;
-    }
-
-    public double getAverageDip() {
-        return averageDip;
     }
 
     public int getShotCount() {
